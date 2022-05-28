@@ -12,7 +12,7 @@ docs <- VCorpus(DirSource("txt_docs"))
 # Inspect a particular document
 writeLines(as.character(docs[[30]]))
 
-# Data cleansing  ------------------------------------------------------------
+# Data preprocessing ---------------------------------------------------------
 
 # Convert to lower cases
 docs <- tm_map(docs,content_transformer(tolower))
