@@ -1,12 +1,18 @@
 # Load the library
 library(tm)
 library(textstem)
+library(ggplot2)
+library(wordcloud)
+library(wordcloud2)
+library(RColorBrewer)
 
 # Create Corpus
 docs <- VCorpus(DirSource("txt_docs"))
 
 # Inspect a particular document
 writeLines(as.character(docs[[30]]))
+
+# Data cleansing  ------------------------------------------------------------
 
 # Convert to lower cases
 docs <- tm_map(docs,content_transformer(tolower))
@@ -15,7 +21,7 @@ docs <- tm_map(docs,content_transformer(tolower))
 
 customised_stopwords <- c("x","r","interviewer","interview","interviewee",
                           "respondent","participant","box","part",
-                          "um","Mmh","mm","hmm","please","yeah",
+                          "um","Mmh","mhm","mm","mmm","hmm","mmh","erm","uhm","please","yeah","yea",
                           "pause","thank","thanks","can","just",
                           "you","youre")
                           
@@ -56,7 +62,10 @@ docs <- tm_map(docs, lemmatize_strings)
 # Convert to 'PlainTextDocument' type object
 docs <- tm_map(docs, PlainTextDocument)
 
-#Create document-term matrix
+
+# DTM with exclusion of highest and lowest frequency -----------------------
+
+# Create document-term matrix
 dtm <- DocumentTermMatrix(docs)
 
 # Get the frequency of occurrence of each word in the corpus
@@ -102,6 +111,73 @@ findAssocs(dtmr,"sense",0.5)
 findAssocs(dtmr,"medium",0.5)
 findAssocs(dtmr,"guess",0.5)
 
+# Create the graph for most frequent words
+
+wf=data.frame(term=names(freqr),occurrences=freqr)
+
+ggplot(subset(wf,freqr>200),aes(reorder(term,-occurrences),occurrences))+
+  geom_bar(stat="identity")+
+  theme(axis.text.x=element_text(angle=45,hjust=1))
+
+
+# Set the same seed each time ensures consistent look across clouds
+set.seed(1234)
+
+# Create a wordcloud 
+wordcloud(names(freqr),freqr,min.freq = 100,random.order=FALSE
+          ,scale=c(3,0.25),rot.per = 0.35,colors=brewer.pal(n=9,name="Blues"))
+
+# Create a word cloud with wordcloud2
+wordcloud2(data=subset(wf,freqr>100), size=0.3,
+           shape = 'pentagon')
+
+# TF-IDF (term frequency-inverse document frequency)------------------------
+
+# Create document-term matrix
+dtm_tfidf <- DocumentTermMatrix(docs,control=list(weighting = weightTfIdf))
+
+# Get the frequency of occurrence of each word in the corpus
+freq_tfidf <- colSums(as.matrix(dtm_tfidf))
+
+
+#length should be total number of terms
+length(freq_tfidf)
+
+#create sort order (descending)
+ord_tfidf <- order(freq_tfidf,decreasing=TRUE)
+
+#inspect most frequently occurring terms
+freq_tfidf[head(ord_tfidf)]
+
+#inspect least frequently occurring terms
+freq_tfidf[tail(ord_tfidf)]  
+
+# Find the associated words with most used words
+
+findAssocs(dtm_tfidf,"music",0.8)
+findAssocs(dtm_tfidf,"unintelligible",0.7)
+findAssocs(dtm_tfidf,"dog",0.8)
+findAssocs(dtm_tfidf,"meditation",0.9)
+
+# Create the graph for most frequent words
+
+wf_tfidf=data.frame(term=names(freq_tfidf),occurrences=freq_tfidf)
+
+ggplot(subset(wf_tfidf,freq_tfidf>0.04),aes(reorder(term,-occurrences),occurrences))+
+  geom_bar(stat="identity")+
+  theme(axis.text.x=element_text(angle=45,hjust=1))
+
+
+# Set the same seed each time ensures consistent look across clouds
+set.seed(1234)
+
+# Create a wordcloud 
+wordcloud(names(freq_tfidf),freq_tfidf,min.freq = 0.03,random.order=FALSE
+          ,scale=c(3,0.25),rot.per = 0.35,colors=brewer.pal(n=9,name="Blues"))
+
+# Create a word cloud with wordcloud2
+wordcloud2(data=subset(wf_tfidf,freq_tfidf>0.03), size=0.3,
+           shape = 'pentagon')
 
 
 
