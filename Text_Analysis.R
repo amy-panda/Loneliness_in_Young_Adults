@@ -25,8 +25,8 @@ docs <- tm_map(docs,content_transformer(tolower))
 # Create customised stopwords and remove them from documents
 customised_stopwords <- c("x","r","interviewer","interview","interviewee",
                           "respondent","participant","box","part",
-                          "um","Mmh","mhm","mm","mmm","hmm","mmh","erm","uhm","umm","uuuuum",
-                          "please","yeah","yea","pause","thank","thanks","can","just",
+                          "uhuum","uhhu","um","Mmh","mhm","mm","mmm","hmm","mmh","erm","uhm","umm","uuuuum","mmmm","hmmm",
+                          "uhhu","please","yeah","yea","yeahhhh","yeaaa","pause","thank","thanks","can","just",
                           "you","youre","make","made","makes","get","thing","things","year","years",
                           "number","though","london","something","gonna","one")
 
@@ -93,16 +93,16 @@ findFreqTerms(dtmr,lowfreq=100)
 findAssocs(dtmr,"obviously",0.5)
 findAssocs(dtmr,"sense",0.5)
 findAssocs(dtmr,"medium",0.5)
-findAssocs(dtmr,"guess",0.5)
+findAssocs(dtmr,"guess",0.6)
 findAssocs(dtmr,"type",0.8)
-findAssocs(dtmr,"laugh",0.7)
-findAssocs(dtmr,"cause",0.00002)
+findAssocs(dtmr,"laugh",0.6)
+
 
 # Create the graph for most frequent words
 wf=data.frame(term=names(freqr),occurrences=freqr)
 
 ggplot(subset(wf,freqr>200),aes(reorder(term,-occurrences),occurrences))+
-  geom_bar(stat="identity")+
+  geom_bar(stat="identity",fill="skyblue")+
   labs(y="Occurrences",x="")+
   theme_bw()+
   theme(axis.text.x=element_text(angle=45,hjust=1))
@@ -138,7 +138,8 @@ freq_tfidf[head(ord_tfidf)]
 freq_tfidf[tail(ord_tfidf)]  
 
 # Find the associated words with most used words
-
+findAssocs(dtm_tfidf,"mum",0.9)
+findAssocs(dtm_tfidf,"mom",0.9)
 findAssocs(dtm_tfidf,"music",0.7)
 findAssocs(dtm_tfidf,"unintelligible",0.7)
 findAssocs(dtm_tfidf,"dog",0.8)
@@ -149,7 +150,7 @@ findAssocs(dtm_tfidf,"meditation",0.9)
 wf_tfidf=data.frame(term=names(freq_tfidf),occurrences=freq_tfidf)
 
 ggplot(subset(wf_tfidf,freq_tfidf>0.04),aes(reorder(term,-occurrences),occurrences))+
-  geom_bar(stat="identity")+
+  geom_bar(stat="identity",fill="springgreen3")+
   labs(x="",y="Occurrences")+
   theme_bw()+
   theme(axis.text.x=element_text(angle=45,hjust=1))
@@ -188,14 +189,15 @@ result <- FindTopicsNumber(
 FindTopicsNumber_plot(result)
 
 # Choose number of topics K=9 based on plot
-k <- 13
+k <- 10
 
 #Set parameters for Gibbs sampling
 burnin <- 4000
 iter <- 2000
 thin <- 500
-seed <-list(2003,5,63,10001,765,9161,123,1200,7542,1256,357,2402,662)
-nstart <- 13
+seed <-list(2003,5,63,10001,765,9161,123,1200,7542,1256)
+
+nstart <- 10
 best <- TRUE
 
 #Run LDA using Gibbs sampling
@@ -215,16 +217,36 @@ top_terms %>%
   mutate(term = reorder_within(term, beta, topic)) %>%
   ggplot(aes(beta, term, fill = factor(topic))) +
   geom_col(show.legend = FALSE) +
-  facet_wrap(~ topic, scales = "free") +
-  scale_y_reordered()
+  facet_wrap(~ topic, scales = "free",nrow = 2) +
+  scale_y_reordered()+
+  scale_fill_brewer(palette = "Paired")+
+  labs(x="",y="")+
+  theme_bw()
+
 
 # Generate word cloud for each topic
 topics %>% 
-  filter(topic==9) %>% 
+  filter(topic==10) %>% 
   arrange(desc(beta)) %>% 
-  slice(1:200) %>% 
+  slice(16:200) %>% 
   select(-topic) %>% 
-  wordcloud2(size=1)
+  wordcloud2(size=0.5)
+
+
+#docs to topics
+ldaOut.topics <- as.matrix(topics(ldaOut))
+ldaOut.topics
+
+a <- cbind(data.frame(ldaOut.topics[,1],row.names=NULL),row.names(ldaOut.topics))
+colnames(a) <- c("topic","document")
+a[order(a$topic),]
+
+# Main topic for each document
+documents %>% 
+  group_by(document) %>% 
+  slice_max(gamma, n = 1) %>% 
+  ungroup() %>%
+  arrange(document,-gamma)
 
 # Document-topic probabilities
 documents <- tidy(ldaOut,matrix="gamma")
@@ -234,8 +256,10 @@ documents %>%
   summarise(ave_gamma=mean(gamma)) %>% 
   arrange(desc(ave_gamma)) %>% 
   ggplot(mapping=aes(x=reorder(topic,-ave_gamma),y=ave_gamma))+
-  geom_col()+
-  labs(x="Topic",y="Average Proportion")
+  geom_col(fill="skyblue")+
+  labs(x="Topic",y="Average Proportion")+
+  theme_bw()
+
 
 # Add fields age, gender and ethnicity by extracting info from document names
 # credit https://stackoverflow.com/questions/8613237/extract-info-inside-all-parenthesis-in-r
@@ -254,24 +278,25 @@ documents_age_gen_eth <-
 ggplot(data=documents_age_gen_eth,mapping=aes(x=as.factor(topic),y=gamma,fill=ethnicity)) +
   geom_boxplot()+
   # facet_grid(~ethnicity)+
-  labs(x="Topics")
+  labs(x="Topics",y="")+
+  scale_fill_brewer(palette = "Pastel2")+
+  theme_bw()
 
 # Create boxplot to show the topics proportion in different genders
 ggplot(data=documents_age_gen_eth,mapping=aes(x=as.factor(topic),y=gamma,fill=gender)) +
   geom_boxplot()+
   # facet_grid(~gender)+
-  labs(x="Topics")
+  labs(x="Topics",y="")+
+  scale_fill_brewer(palette = "Pastel1")+
+  theme_bw()
 
 # Create boxplot to show the topics proportion with different ages
 ggplot(data=documents_age_gen_eth,mapping=aes(x=as.factor(topic),y=gamma,fill=as.factor(age))) +
   geom_boxplot()+
   # facet_grid(~as.factor(age))+
-  labs(x="Topics")
+  labs(x="Topics",y="",fill="age")+
+  scale_fill_brewer(palette = "Pastel1")+
+  theme_bw()
 
-#docs to topics
-ldaOut.topics <- as.matrix(topics(ldaOut))
-ldaOut.topics
 
-a <- cbind(data.frame(ldaOut.topics[,1],row.names=NULL),row.names(ldaOut.topics))
-colnames(a) <- c("topic","document")
-a[order(a$topic),]
+
