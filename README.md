@@ -1,7 +1,7 @@
 
 # Text Analysis of Loneliness in Young Adults
 
-In this project, the text analysis techniques - word frequency, topic modelling and K-means clustering were utilized to analyse the qualitative data on loneliness among young adults and provide insight into young adults’ experience of loneliness and the potential impact of demographics such as gender and age on their experience.
+In this project, the text analysis techniques - word frequency and topic modelling were utilized to analyse the qualitative data on loneliness among young adults and provide insight into young adults’ experience of loneliness and the potential impact of demographics such as gender and age on their experience.
 
 
 ## Project Description
@@ -9,7 +9,6 @@ In this project, the text analysis techniques - word frequency, topic modelling 
 **Methods:**
 - Word frequency
 - Topic modelling using the algorithm LDA
-- K-means clustering
 
 **Tools and main packages:**
 - R/Rstudio
